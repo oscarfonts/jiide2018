@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head><title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta charset="UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="vs2015.css">
+    <link href='big.css' rel='stylesheet' type='text/css'/>
+    <script src='big.js'></script>
+    <script src='showdown.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'></script>
+</head>
+<body class="dark">
+(usa &harr; para navegar)
+
+
+Os voy a contar la historia de un desarrollo.
+
+
+¿Por qué os la cuento?
+
+
+Porque el subproducto resultante ha suscitado cierto interés.
+
+
+(de repente tienes algún fork, y alguien te contrata para que lo mejores)
+
+
+Ahí va la historia.
+
+
+Te dedicas al *web mapping*, y recientemente has descubierto las bondades de las *teselas vectoriales*.
+
+
+Has hecho algunos juguetes interesantes con la API de *Mapbox GL JS*: interactividad y dinamismo a tope.
+
+
+# Luces LA
+[![Luces](luces-la.png)](https://cityhubla.github.io/lacity_exploration_18/index.html#16.38/34.053569/-118.242875/36/55)
+
+
+# Filtrado al vuelo
+![Temático](ejemplo-turf.gif)
+
+
+# Temático filtro
+[![Temático](vt-ny-carto.gif)](https://carto.com/blog/using-mvt-in-carto/)
+
+
+# Edificios con música
+[![Edificios](edificios-musica.gif)](https://twitter.com/jessewhazel/status/981379944440877058)
+#### Demo: https://codepen.io/jwhazel/pen/NYzpWG
+#### Blog explicativo https://medium.com/@erdag/mappox-mapmadness18-round-4-1251a8c10421
+
+
+Entonces te piden una app de mapas offline y piensas: Vector Tiles, ¡por supuesto!
+
+
+¿Por qué?
+
+
+Porque pesan muy Poco:
+  * Todo Barcelona en OpenMapTiles son unos 12 MB.
+  * Medio millón de construcciones del área metropolitana son 37 MB.
+  * De hecho, puedo llevarme el "mapa excursionista" de todo Catalunya por 350 MB.
+
+
+Porque puedes hacer cosas muy chulas:
+  * Esos 12 MB del Barcelona los puedo pintar al nivel de zoom que quiera, y con el estilo que quiera.
+  * Ese medio millón de construcciones las puedo pintar en 3D, filtrarlas en función de su número de parcela catastral, ¡animarlas con música!.
+
+
+Porque ya tienes una API en JS brutal. Se llama Mapbox GL JS.
+
+
+
+¿Hay alternativas?
+
+
+Estás decidido a aprovechar la API de MapboxGL JS.
+
+
+Pero cuando googleas "Mapbox GL JS Offline", la respuesta oficial es:
+  * Usa las variantes nativas de MapboxGL.
+  * Si quieres Android + iOS de una tacada: Usa MapboxGL React Native.
+
+
+Pero:
+  * Yo quiero mi API, no un tinglado por encima.
+  * Los wrappers de APIs los carga el Diablo (tm).
+  * Así que yo a lo mío: Vanilla JS.
+
+
+Primera iteración: Metemos un mapa de Mapbox GL JS tal cual en Cordova. Todos los recursos on line. Y funciona sin más. Check.
+
+
+Segunda iteración: Movemos los recursos online al `www` del movil. Esto es: `sprites`, `glyphs` y... `tiles`.
+
+
+Pegas hasta aquí:
+  * Las rutas a `sprites`, `glyphs` y `tiles` no pueden ser relativas `data/loquesea.json`, sino absolutas: `file:///www/data/loquesea.json`.
+  * Además los sprites que empiezan por `file:///` petan por un bug en una RegEx de MapBox. Pero eso tiene solución: [PR 4649](https://github.com/mapbox/mapbox-gl-js/pull/4649)
+
+
+Espera, espera: dijiste tiles.
+
+
+¿Cómo las lees?
+
+
+A lo bruto. Estructura de directorios:
+
+```
+0/0/0.pbf
+1/0/0.pbf
+1/0/1.pbf
+1/1/0.pbf
+1/1/1.pbf
+```
+
+Au, arreglado. Todos a casa.
+
+
+No, no:
+
+`18/262144/262144.pbf`
+
+
+Miles de directorios, con miles de teselas en cada uno, desparramados en tu `www`. Eso no hay quien lo mueva.
+
+
+Tercera iteración: `.mbtiles`
+
+Un único fichero que contiene todas las teselas.
+
+
+El problema ahora se reduce a:
+
+¿cómo leo un `.mbtiles` desde Mapbox GL JS?
+
+
+Que se divide en dos subproblemas:
+
+Primero, ¿cómo extraigo una tesela de un `.mbtiles`?
+
+Y luego, ¿cómo se la paso a MapboxGL JS?
+
+
+¿cómo extraigo una tesela de un `.mbtiles`?
+
+dicho de otro modo es
+
+¿Cómo leo el contenido de un `.mbtiles` desde una aplicación Cordova?
+
+
+¿Qué es un `.mbtiles`?
+
+Una BDD SQLite con una tabla: `z`, `x`, `y`, `tesela`.
+
+
+Muy fácil:
+
+Googlear "Cordova SQLite Plugin".
+
+Plugins varios.
+
+
+Aunque...
+
+`.mbtiles` es una BDD SQLite que contiene... BLOBS
+
+
+![Ouch](ouch.jpg)
+
+
+Soluciones: No tantas. Pero al menos un plugin hay: [`cordova-sqlite-ext`](https://github.com/litehelpers/cordova-sqlite-ext).
+
+
+Ya podemos recuperar una tesela `pbf` y la tenemos en un objeto JS.
+
+
+La segunda parte del problema:
+¿cómo se la paso a MapboxGL JS?
+
+
+La librería sólo entiende de peticiones a URLs. Hay quien ha montado un servidor HTTP embebido en la App.
+
+
+Otros hemos extendido la librería MapboxGL JS.
+
+
+![Ouch](ouch2.jpg)
+
+
+No es para tanto.
+
+
+Es básicamente reescribir un método `loadTile` para que donde dice "AJAX" diga "SQL".
+
+
+Y reempaquetar.
+
+
+(Bienvenidos al infierno de los detalles: workers en `rollup`)
+
+
+Además, encapsularemos la ñapa para construir URLs absolutas a partir de relativas.
+
+
+Gracias a ello, se pueden hacer Apps del tipo:
+
+[OpenMapTiles](https://play.google.com/store/apps/details?id=com.klokantech.osm2vectortile)
+
+[Catalunya Offline](https://play.google.com/store/apps/details?id=com.icgc.catoffline)
+
+
+Fin.
+
+
+Eeeeh no tan rápido amigo!
+
+
+Show me the code.
+
+
+SHOW ME THE F***ING CODE.
+
+
+[https://github.com/oscarfonts/mapbox-gl-cordova-offline](https://github.com/oscarfonts/mapbox-gl-cordova-offline)
+
+
+# PS: ¿y cómo se usa?
+
+#### `Map`
+
+```javascript
+let map = mapboxgl.Map({
+    container: 'map',
+    style: 'styles/osm-bright/style.json'
+});
+
+map.addControl(new mapboxgl.NavigationControl());
+```
+
+#### vs. `OfflineMap`
+
+```javascript
+new mapboxgl.OfflineMap({
+    container: 'map',
+    style: 'styles/osm-bright/style-offline.json'
+}).then(function(map) {
+    map.addControl(new mapboxgl.NavigationControl());
+});
+```
+
+
+#### `style.json`
+
+```json
+{
+    "sprite": "http://example.com/style/sprite",
+    "glyphs": "http://example.com/fonts/{fontstack}/{range}.pbf",
+    "sources": {
+        "online-source": {
+            "type": "vector",
+            "tiles": ["http://example.com/data/{z}/{x}/{y}.pbf"]
+        }
+    }
+}
+```
+
+#### vs `style-offline.json`
+
+```json
+{
+    "sprite": "style/sprite",
+    "glyphs": "fonts/{fontstack}/{range}.pbf",
+    "sources": {
+        "online-source": {
+            "type": "mbtiles",
+            "tiles": "data/source.mbtiles"
+        }
+    }
+}
+```
+
+
+Posibles mejoras:
+
+* Soportar mbtiles de teselas "raster" (png, jpeg).
+* Mejor gestión de la "instalación" del `.mbtiles`.
+
+
+Oscar Fonts
+
+&lt;oscar.fonts@geomati.co>
+
+http://fonts.cat/siglibre2018
+
+
+</body>
+<footer>
+    <script>
+showdown.extension('codehighlight', function() {
+  function htmlunencode(text) {
+    return (
+      text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+      );
+  }
+  return [
+    {
+      type: 'output',
+      filter: function (text, converter, options) {
+        // use new shodown's regexp engine to conditionally parse codeblocks
+        var left  = '<pre><code\\b[^>]*>',
+            right = '</code></pre>',
+            flags = 'g',
+            replacement = function (wholeMatch, match, left, right) {
+              // unescape match to prevent double escaping
+              match = htmlunencode(match);
+              return left + hljs.highlightAuto(match).value + right;
+            };
+        return showdown.helper.replaceRecursiveRegExp(text, replacement, left, right, flags);
+      }
+    }
+  ];
+});
+
+    var converter = new showdown.Converter({ extensions: ['codehighlight'] })
+    converter.setOption('tables', true)
+    converter.setOption('openLinksInNewWindow', true)
+    converter.setFlavor('github')
+    var slides = document.body.innerHTML.split('\n\n\n')
+    document.body.innerHTML = ''
+    for (var i = 0; i < slides.length - 1; i++) {
+      console.log(i)
+      document.body.innerHTML += '<div>' + converter.makeHtml(slides[i]) + '</div>'
+    }</script>
+</footer>
+</html>
