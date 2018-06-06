@@ -35,22 +35,13 @@ Te dedicas al *web mapping*, y recientemente has descubierto las bondades de las
 Has hecho algunos juguetes interesantes con la API de *Mapbox GL JS*: interactividad y dinamismo a tope.
 
 
-# Luces LA
-[![Luces](luces-la.png)](https://cityhubla.github.io/lacity_exploration_18/index.html#16.38/34.053569/-118.242875/36/55)
+![Catastro](ejemplo-catastro.png)
 
 
-# Filtrado al vuelo
-![Temático](ejemplo-turf.gif)
+![Turf](ejemplo-turf.gif)
 
 
-# Temático filtro
-[![Temático](vt-ny-carto.gif)](https://carto.com/blog/using-mvt-in-carto/)
-
-
-# Edificios con música
-[![Edificios](edificios-musica.gif)](https://twitter.com/jessewhazel/status/981379944440877058)
-#### Demo: https://codepen.io/jwhazel/pen/NYzpWG
-#### Blog explicativo https://medium.com/@erdag/mappox-mapmadness18-round-4-1251a8c10421
+![Trips](ejemplo-trips.gif)
 
 
 Entonces te piden una app de mapas offline y piensas: Vector Tiles, ¡por supuesto!
@@ -67,7 +58,7 @@ Porque pesan muy Poco:
 
 Porque puedes hacer cosas muy chulas:
   * Esos 12 MB del Barcelona los puedo pintar al nivel de zoom que quiera, y con el estilo que quiera.
-  * Ese medio millón de construcciones las puedo pintar en 3D, filtrarlas en función de su número de parcela catastral, ¡animarlas con música!.
+  * Ese medio millón de construcciones las puedo pintar en 3D, filtrarlas en función de su número de parcela catastral... ¡animarlas con música!
 
 
 Porque ya tienes una API en JS brutal. Se llama Mapbox GL JS.
@@ -170,7 +161,7 @@ Aunque...
 `.mbtiles` es una BDD SQLite que contiene... BLOBS
 
 
-![Ouch](ouch.jpg)
+![Munch](munch.jpg)
 
 
 Soluciones: No tantas. Pero al menos un plugin hay: [`cordova-sqlite-ext`](https://github.com/litehelpers/cordova-sqlite-ext).
@@ -189,7 +180,7 @@ La librería sólo entiende de peticiones a URLs. Hay quien ha montado un servid
 Otros hemos extendido la librería MapboxGL JS.
 
 
-![Ouch](ouch2.jpg)
+![Ciencia](ciencia.jpg)
 
 
 No es para tanto.
@@ -199,6 +190,9 @@ Es básicamente reescribir un método `loadTile` para que donde dice "AJAX" diga
 
 
 Y reempaquetar.
+
+
+![Ciencia](ciencia.jpg)
 
 
 (Bienvenidos al infierno de los detalles: workers en `rollup`)
